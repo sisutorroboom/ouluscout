@@ -5,12 +5,12 @@ import MapComponent from './components/MapComponent';
 import Sidebar from './components/Sidebar';
 
 const DEFAULT_WEIGHTS: AnalysisWeights = {
-  traffic: 20,
+  traffic: 25,
   population: 20,
   jobs: 15,
-  income: 15,
+  income: 10,
   competition: 15,
-  transit: 15,
+  pedestrians: 15,
 };
 
 let locationCounter = 0;
@@ -106,7 +106,7 @@ export default function App() {
       </div>
 
       {/* Sidebar */}
-      <div className="w-96 flex flex-col bg-gray-900 border-l border-gray-700 overflow-hidden">
+      <div className="w-[480px] flex flex-col bg-gray-900 border-l border-gray-700 overflow-hidden">
         <Sidebar
           locations={locations}
           activeLocationId={activeLocationId}

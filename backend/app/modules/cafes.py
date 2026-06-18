@@ -87,22 +87,23 @@ async def get_cafes(
             "nearest_m": float,
         }
     """
-    # Overpass QL – broad query that catches all likely cafe competitors.
-    # Uses `nwr` (node+way+relation) so large shopping-mall cafes (ways/relations)
-    # are included. `out center` gives a representative centroid for ways/relations.
+    # Overpass QL – broad query for all likely cafe competitors in Finnish cities.
+    # `out center;` is a complete, valid output format that includes:
+    #   - all tags (name, amenity, shop…)
+    #   - lat/lon for nodes, centroid for ways/relations
     query = (
         f"[out:json][timeout:25];"
         f"("
-        # Standard cafes
-        f'nwr["amenity"="cafe"](around:1000,{lat},{lon});'
-        # Specialty coffee shops
-        f'nwr["shop"="coffee"](around:1000,{lat},{lon});'
-        # Finnish bakeries (nearly always serve coffee at tables)
-        f'nwr["amenity"="bakery"](around:1000,{lat},{lon});'
-        # Fast-food-tagged coffee chains (Robert's Coffee, Coffee House, etc.)
-        f'nwr["amenity"="fast_food"]["name"~"{_CHAIN_REGEX}",i](around:1000,{lat},{lon});'
+        f'node["amenity"="cafe"](around:1000,{lat},{lon});'
+        f'way["amenity"="cafe"](around:1000,{lat},{lon});'
+        f'node["shop"="coffee"](around:1000,{lat},{lon});'
+        f'way["shop"="coffee"](around:1000,{lat},{lon});'
+        f'node["amenity"="bakery"](around:1000,{lat},{lon});'
+        f'way["amenity"="bakery"](around:1000,{lat},{lon});'
+        f'node["amenity"="fast_food"]["name"~"{_CHAIN_REGEX}",i](around:1000,{lat},{lon});'
+        f'way["amenity"="fast_food"]["name"~"{_CHAIN_REGEX}",i](around:1000,{lat},{lon});'
         f");"
-        f"out center tags;"
+        f"out center;"
     )
 
     error_note = ""

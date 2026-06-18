@@ -6,12 +6,12 @@ interface WeightsPanelProps {
 }
 
 const DEFAULT_WEIGHTS: AnalysisWeights = {
-  traffic: 20,
+  traffic: 25,
   population: 20,
   jobs: 15,
-  income: 15,
+  income: 10,
   competition: 15,
-  transit: 15,
+  pedestrians: 15,
 };
 
 const WEIGHT_LABELS: Record<keyof AnalysisWeights, string> = {
@@ -20,7 +20,7 @@ const WEIGHT_LABELS: Record<keyof AnalysisWeights, string> = {
   jobs: 'Työpaikat',
   income: 'Tulotaso',
   competition: 'Kilpailu',
-  transit: 'Saavutettavuus',
+  pedestrians: 'Jalankulkijat',
 };
 
 const WEIGHT_KEYS = Object.keys(DEFAULT_WEIGHTS) as (keyof AnalysisWeights)[];

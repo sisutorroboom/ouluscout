@@ -37,6 +37,9 @@ class PopulationResult(BaseModel):
     median_income: Optional[float] = None
     jobs_count: int = 0
     data_source: str = ""
+    avg_rent_m2: Optional[float] = None   # estimated commercial rent €/m²
+    postal_code: Optional[str] = None
+    area_name: Optional[str] = None
 
 
 class TrafficResult(BaseModel):
@@ -68,7 +71,7 @@ class ScoreBreakdown(BaseModel):
     jobs: float = 0.0
     income: float = 0.0
     competition: float = 0.0
-    transit: float = 0.0
+    pedestrians: float = 0.0
     total: float = 0.0
 
 

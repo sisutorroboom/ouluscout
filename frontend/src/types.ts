@@ -4,7 +4,7 @@ export interface AnalysisWeights {
   jobs: number;
   income: number;
   competition: number;
-  transit: number;
+  pedestrians: number;
 }
 
 export interface IsochroneResult {
@@ -36,6 +36,9 @@ export interface PopulationResult {
   median_income: number | null;
   jobs_count: number;
   data_source: string;
+  avg_rent_m2: number | null;
+  postal_code: string | null;
+  area_name: string | null;
 }
 
 export interface TrafficResult {
@@ -67,7 +70,7 @@ export interface ScoreBreakdown {
   jobs: number;
   income: number;
   competition: number;
-  transit: number;
+  pedestrians: number;
   total: number;
 }
 
