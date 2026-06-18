@@ -286,9 +286,6 @@ export default function MapComponent({
             const borderColor =
               ISOCHRONE_BORDER_COLORS[profile] ?? 'rgba(100,100,100,0.7)';
 
-            // coords from backend: array of [lon, lat] pairs forming a ring
-            const geojsonCoords: number[][][] = [coords];
-
             try {
               map.addSource(sourceId, {
                 type: 'geojson',
@@ -296,7 +293,7 @@ export default function MapComponent({
                   type: 'Feature',
                   geometry: {
                     type: 'Polygon',
-                    coordinates: geojsonCoords,
+                    coordinates: coords,
                   },
                   properties: {},
                 },
