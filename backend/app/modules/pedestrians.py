@@ -34,11 +34,11 @@ query GetEcoCounterSites {
 }
 """
 
-# Fetch weekly counts for a single channel (broader window to ensure we get data).
-# step values per Oulunliikenne docs: "15min" | "hour" | "day" | "week" | "month" | "year"
+# Fetch daily counts for a single channel.
+# Correct GraphQL types: id=String!, domain=EcoCounterDomain! (enum), step=enum value (no quotes).
 _DATA_QUERY = """
-query GetChannelData($id: Int!, $domain: String!, $begin: String!, $end: String!) {
-  ecoCounterSiteData(id: $id, domain: $domain, step: "day", begin: $begin, end: $end) {
+query GetChannelData($id: String!, $domain: EcoCounterDomain!, $begin: GraphQLDateTime!, $end: GraphQLDateTime!) {
+  ecoCounterSiteData(id: $id, domain: $domain, step: day, begin: $begin, end: $end) {
     date
     counts
   }
@@ -96,7 +96,9 @@ def _find_nearest_channel(
     nearest_domain: Optional[str] = None
     nearest_dist = float("inf")
 
-    for site in sites:
+    for site in (sites or []):
+        if not site:
+            continue
         domain = site.get("domain", "")
         for ch in site.get("channels") or []:
             slat = ch.get("lat")
@@ -162,9 +164,9 @@ async def get_pedestrians(lat: float, lon: float) -> Dict[str, Any]:
 
     station_name = channel.get("name") or "Nimetön asema"
 
-    # Try channel.id first (own ID), fall back to channel.siteId (parent site ID).
-    # The API docs say "the channel's siteId value" but in practice `id` may work too.
-    channel_id = channel.get("id") or channel.get("siteId")
+    # siteId is the query key used by ecoCounterSiteData (a string like "pikisaarensilta_1").
+    # The channel's own `id` field is a base64 opaque identifier not accepted by the data query.
+    channel_id = channel.get("siteId") or channel.get("id")
 
     # Fetch the past 30 days of daily counts for this channel (wider window to
     # ensure we get at least some data even for stations that update infrequently)
@@ -181,7 +183,7 @@ async def get_pedestrians(lat: float, lon: float) -> Dict[str, Any]:
                 client,
                 _DATA_QUERY,
                 variables={
-                    "id": int(channel_id),
+                    "id": str(channel_id),
                     "domain": domain,
                     "begin": begin_str,
                     "end": end_str,
