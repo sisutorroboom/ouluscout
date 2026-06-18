@@ -144,6 +144,7 @@ def _safe_cafe_result(raw: Any) -> CafeResult:
         count_isochrone=raw.get("count_isochrone", 0) or 0,
         cafes=raw.get("cafes", []) or [],
         nearest_m=float(raw.get("nearest_m", 0.0) or 0.0),
+        note=raw.get("note") or "",
     )
 
 
