@@ -10,7 +10,7 @@ const SCORE_LABELS: Record<keyof Omit<ScoreBreakdown, 'total'>, string> = {
   jobs: 'Työpaikat',
   income: 'Tulotaso',
   competition: 'Kilpailu',
-  transit: 'Saavutettavuus',
+  pedestrians: 'Jalankulkijat',
 };
 
 const SCORE_KEYS = Object.keys(SCORE_LABELS) as (keyof Omit<ScoreBreakdown, 'total'>)[];

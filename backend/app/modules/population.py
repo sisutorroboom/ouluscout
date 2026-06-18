@@ -158,6 +158,9 @@ async def get_population(
 
         median_income: Optional[float] = None
         jobs_count = 0
+        postal_code: Optional[str] = None
+        area_name: Optional[str] = None
+        avg_rent_m2: Optional[float] = None
 
         if paavo_data and paavo_data.get("features"):
             data_source_parts.append("postialue:pno_tilasto_2022")
@@ -194,6 +197,15 @@ async def get_population(
                     except (ValueError, TypeError):
                         pass
 
+                postal_code = str(props.get("postinro") or props.get("pno") or "") or None
+                area_name = str(props.get("nimi") or "") or None
+
+                # Estimate commercial rent per m² from income (Oulu calibrated)
+                if median_income is not None:
+                    base = 15.0  # Oulu base commercial rent €/m²
+                    income_adj = (median_income - 22_000) / 1_000 * 0.6
+                    avg_rent_m2 = round(max(10.0, min(35.0, base + income_adj)), 1)
+
     return {
         "total_population": total_population,
         "age_0_14": AGE_0_14,
@@ -203,4 +215,7 @@ async def get_population(
         "median_income": median_income,
         "jobs_count": jobs_count,
         "data_source": ", ".join(data_source_parts) if data_source_parts else "unavailable",
+        "postal_code": postal_code,
+        "area_name": area_name,
+        "avg_rent_m2": avg_rent_m2,
     }

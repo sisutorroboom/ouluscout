@@ -159,6 +159,9 @@ def _safe_population_result(raw: Any) -> PopulationResult:
         median_income=raw.get("median_income"),
         jobs_count=raw.get("jobs_count", 0) or 0,
         data_source=raw.get("data_source", "") or "",
+        avg_rent_m2=raw.get("avg_rent_m2"),
+        postal_code=raw.get("postal_code") or None,
+        area_name=raw.get("area_name") or None,
     )
 
 

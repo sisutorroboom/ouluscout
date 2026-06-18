@@ -116,6 +116,16 @@ export function PopulationCard({ data }: { data: PopulationResult }) {
         </div>
       </div>
 
+      {data.area_name && (
+        <DataRow label="Postinumeroalue" value={data.area_name} />
+      )}
+      {data.avg_rent_m2 != null && (
+        <DataRow
+          label="Vuokra-arvio (60m²)"
+          value={<span className="text-amber-400">{Math.round(data.avg_rent_m2 * 60).toLocaleString('fi-FI')} €/kk</span>}
+        />
+      )}
+
       {data.data_source && (
         <p className="text-xs text-gray-600 mt-1">Lähde: {data.data_source}</p>
       )}

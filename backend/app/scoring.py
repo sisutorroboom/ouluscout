@@ -3,11 +3,12 @@ Location scoring engine for OuluScout.
 
 Each dimension is scored 0–100 before weighting.
 Default weights (sum to 1.0):
-  traffic     0.30
-  population  0.25
+  traffic     0.25
+  population  0.20
   jobs        0.15
   income      0.10
-  competition 0.20
+  competition 0.15
+  pedestrians 0.15
 """
 
 from typing import Any, Dict
@@ -15,11 +16,12 @@ from typing import Any, Dict
 from app.models import ScoreBreakdown
 
 DEFAULT_WEIGHTS: Dict[str, float] = {
-    "traffic": 0.30,
-    "population": 0.25,
+    "traffic": 0.25,
+    "population": 0.20,
     "jobs": 0.15,
     "income": 0.10,
-    "competition": 0.20,
+    "competition": 0.15,
+    "pedestrians": 0.15,
 }
 
 
@@ -88,21 +90,29 @@ def _score_competition(cafes: Dict[str, Any]) -> float:
     return 30.0
 
 
+def _score_pedestrians(pedestrians: Dict[str, Any]) -> float:
+    """0 pts at 0 pedestrians/day, 100 pts at 5000+ pedestrians/day (linear, capped)."""
+    count = pedestrians.get("typical_daily") or pedestrians.get("nearest_count")
+    if count is None:
+        return 0.0
+    return _clamp(count / 5_000 * 100)
+
+
 def calculate_score(
     traffic: Dict[str, Any],
     population: Dict[str, Any],
     cafes: Dict[str, Any],
-    pedestrians: Dict[str, Any],  # noqa: ARG001 – reserved for future use
+    pedestrians: Dict[str, Any],
     weights: Dict[str, float],
 ) -> ScoreBreakdown:
     """
     Compute per-dimension scores and aggregate weighted total.
 
     ``weights`` should contain keys: traffic, population, jobs, income,
-    competition – floats that sum to 1.0.
+    competition, pedestrians – floats that sum to 1.0.
     Missing keys fall back to DEFAULT_WEIGHTS.
     """
-    # Only keep the five active weight keys; drop any unknown keys from caller
+    # Only keep the active weight keys; drop any unknown keys from caller
     active_keys = set(DEFAULT_WEIGHTS)
     filtered = {k: v for k, v in weights.items() if k in active_keys}
     resolved: Dict[str, float] = {**DEFAULT_WEIGHTS, **filtered}
@@ -117,6 +127,7 @@ def calculate_score(
     s_jobs = _score_jobs(population)
     s_income = _score_income(population)
     s_competition = _score_competition(cafes)
+    s_pedestrians = _score_pedestrians(pedestrians)
 
     total = (
         s_traffic * resolved["traffic"]
@@ -124,6 +135,7 @@ def calculate_score(
         + s_jobs * resolved["jobs"]
         + s_income * resolved["income"]
         + s_competition * resolved["competition"]
+        + s_pedestrians * resolved["pedestrians"]
     )
 
     return ScoreBreakdown(
@@ -132,6 +144,6 @@ def calculate_score(
         jobs=round(s_jobs, 2),
         income=round(s_income, 2),
         competition=round(s_competition, 2),
-        transit=0.0,  # not scored
+        pedestrians=round(s_pedestrians, 2),
         total=round(_clamp(total), 2),
     )
