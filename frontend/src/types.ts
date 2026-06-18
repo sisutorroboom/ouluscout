@@ -8,7 +8,7 @@ export interface AnalysisWeights {
 }
 
 export interface IsochroneResult {
-  polygons: Record<string, Record<string, number[][]>>;  // profile -> minutes -> coords
+  polygons: Record<string, Record<string, number[][][]>>;  // profile -> minutes -> GeoJSON polygon rings
 }
 
 export interface CafeItem {
