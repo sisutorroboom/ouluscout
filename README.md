@@ -1,0 +1,2 @@
+# ouluscout
+Kiinteitöjen pisteytys 
