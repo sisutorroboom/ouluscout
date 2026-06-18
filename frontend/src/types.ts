@@ -24,6 +24,7 @@ export interface CafeResult {
   count_isochrone: number;
   cafes: CafeItem[];
   nearest_m: number;
+  note: string;
 }
 
 export interface PopulationResult {

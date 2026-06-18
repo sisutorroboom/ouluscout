@@ -25,6 +25,7 @@ class CafeResult(BaseModel):
     count_isochrone: int = 0
     cafes: List[Dict[str, Any]] = Field(default_factory=list)
     nearest_m: float = 0.0
+    note: str = ""
 
 
 class PopulationResult(BaseModel):

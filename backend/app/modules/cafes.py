@@ -1,6 +1,11 @@
 """
 Cafe discovery via Overpass API.
-Queries cafes within 1 km radius and optionally within an isochrone polygon.
+
+Catches all likely coffee-shop competitors in a Finnish city context:
+  - amenity=cafe         (standard OSM cafes)
+  - shop=coffee          (specialty coffee shops)
+  - amenity=fast_food    with known Finnish/Nordic coffee chain names
+  - amenity=bakery       (Finnish kahvila-bakeries serve coffee at tables)
 """
 
 import sys
@@ -10,6 +15,13 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+
+# Case-insensitive name regex that catches major Finnish coffee chains tagged
+# as fast_food in OSM (Robert's Coffee, Coffee House, Espresso House, etc.)
+_CHAIN_REGEX = (
+    "Robert|Coffee House|Espresso House|Wayne|Starbucks|"
+    "Barista|Kahvila|Pressbyrån|Fazer Café|Aino"
+)
 
 
 def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -75,22 +87,32 @@ async def get_cafes(
             "nearest_m": float,
         }
     """
-    # Overpass QL – all cafes within 1 000 m
+    # Overpass QL – broad query that catches all likely cafe competitors.
+    # Uses `nwr` (node+way+relation) so large shopping-mall cafes (ways/relations)
+    # are included. `out center` gives a representative centroid for ways/relations.
     query = (
-        f"[out:json][timeout:15];"
+        f"[out:json][timeout:25];"
         f"("
-        f'node["amenity"="cafe"](around:1000,{lat},{lon});'
-        f'way["amenity"="cafe"](around:1000,{lat},{lon});'
+        # Standard cafes
+        f'nwr["amenity"="cafe"](around:1000,{lat},{lon});'
+        # Specialty coffee shops
+        f'nwr["shop"="coffee"](around:1000,{lat},{lon});'
+        # Finnish bakeries (nearly always serve coffee at tables)
+        f'nwr["amenity"="bakery"](around:1000,{lat},{lon});'
+        # Fast-food-tagged coffee chains (Robert's Coffee, Coffee House, etc.)
+        f'nwr["amenity"="fast_food"]["name"~"{_CHAIN_REGEX}",i](around:1000,{lat},{lon});'
         f");"
-        f"out center;"
+        f"out center tags;"
     )
 
+    error_note = ""
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=25.0) as client:
             resp = await client.post(OVERPASS_URL, data={"data": query})
             resp.raise_for_status()
             data = resp.json()
     except Exception as exc:
+        error_note = str(exc)
         print(f"[cafes] Overpass query failed: {exc}", file=sys.stderr)
         return {
             "count_500m": 0,
@@ -98,11 +120,18 @@ async def get_cafes(
             "count_isochrone": 0,
             "cafes": [],
             "nearest_m": 0.0,
+            "note": f"Overpass API ei vastannut: {error_note}",
         }
 
+    seen_ids: set = set()
     cafes: List[Dict[str, Any]] = []
     for element in data.get("elements", []):
-        # nodes have lat/lon directly; ways have a 'center'
+        elem_id = (element.get("type"), element.get("id"))
+        if elem_id in seen_ids:
+            continue
+        seen_ids.add(elem_id)
+
+        # nodes have lat/lon directly; ways/relations have a 'center'
         if element.get("type") == "node":
             clat = element.get("lat")
             clon = element.get("lon")
@@ -115,7 +144,7 @@ async def get_cafes(
             continue
 
         tags = element.get("tags", {})
-        name = tags.get("name", "Unnamed cafe")
+        name = tags.get("name") or tags.get("brand") or "Nimetön kahvila"
         dist = _haversine_m(lat, lon, clat, clon)
         cafes.append({"name": name, "lat": clat, "lon": clon, "distance_m": round(dist, 1)})
 
@@ -135,4 +164,5 @@ async def get_cafes(
         "count_isochrone": count_isochrone,
         "cafes": cafes,
         "nearest_m": nearest_m,
+        "note": "",
     }

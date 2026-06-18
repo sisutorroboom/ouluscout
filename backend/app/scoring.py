@@ -51,15 +51,23 @@ def _score_jobs(population: Dict[str, Any]) -> float:
 
 def _score_income(population: Dict[str, Any]) -> float:
     """
-    Baseline 25 000 €/yr = 50 pts.
-    Each additional 1 000 € = +5 pts.
-    Capped at 100 pts.
+    Oulu-calibrated income scoring.
+
+    Paavo hr_mtu (median income, €/yr) in Oulu typically ranges 18 000–32 000.
+    Baseline 22 000 €/yr (Oulu regional median) = 50 pts.
+    Each 1 000 € difference = ±6 pts, clamped 0–100.
+
+    Examples:
+      18 000 € → 26 pts   (low-income peripheral area)
+      22 000 € → 50 pts   (typical Oulu neighbourhood)
+      26 000 € → 74 pts   (above-average area)
+      30 000 € → 98 pts   (affluent suburb)
     """
     income = population.get("median_income")
     if income is None:
         return 50.0  # neutral when no data
-    baseline = 25_000.0
-    score = 50.0 + (income - baseline) / 1_000 * 5.0
+    oulu_baseline = 22_000.0
+    score = 50.0 + (income - oulu_baseline) / 1_000 * 6.0
     return _clamp(score)
 
 

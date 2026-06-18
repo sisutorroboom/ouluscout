@@ -167,6 +167,7 @@ export function CafesCard({ data }: { data: CafeResult }) {
           </div>
         </div>
       )}
+      {data.note && <Note text={data.note} />}
     </Card>
   );
 }
