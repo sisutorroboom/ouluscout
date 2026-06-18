@@ -1,0 +1,76 @@
+@import 'maplibre-gl/dist/maplibre-gl.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* MapLibre popup overrides */
+.maplibregl-popup-content {
+  background: #1f2937;
+  color: white;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.maplibregl-popup-tip {
+  border-top-color: #1f2937 !important;
+  border-bottom-color: #1f2937 !important;
+}
+
+.maplibregl-ctrl-group {
+  background: #1f2937 !important;
+  border: 1px solid #374151 !important;
+}
+
+.maplibregl-ctrl-group button {
+  background-color: #1f2937 !important;
+  color: white !important;
+}
+
+.maplibregl-ctrl-group button:hover {
+  background-color: #374151 !important;
+}
+
+.maplibregl-ctrl-attrib {
+  background: rgba(17, 24, 39, 0.8) !important;
+  color: #9ca3af !important;
+}
+
+.maplibregl-ctrl-attrib a {
+  color: #60a5fa !important;
+}
+
+/* Smooth transitions */
+.transition-all {
+  transition: all 0.2s ease;
+}
