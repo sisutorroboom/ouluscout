@@ -34,10 +34,11 @@ query GetEcoCounterSites {
 }
 """
 
-# Fetch daily counts for a single channel over the past 7 days
+# Fetch weekly counts for a single channel (broader window to ensure we get data).
+# step values per Oulunliikenne docs: "15min" | "hour" | "day" | "week" | "month" | "year"
 _DATA_QUERY = """
 query GetChannelData($id: Int!, $domain: String!, $begin: String!, $end: String!) {
-  ecoCounterSiteData(id: $id, domain: $domain, step: "DAY", begin: $begin, end: $end) {
+  ecoCounterSiteData(id: $id, domain: $domain, step: "day", begin: $begin, end: $end) {
     date
     counts
   }
@@ -160,23 +161,27 @@ async def get_pedestrians(lat: float, lon: float) -> Dict[str, Any]:
         }
 
     station_name = channel.get("name") or "Nimetön asema"
-    channel_site_id = channel.get("siteId")
 
-    # Fetch the past 7 days of daily counts for this channel
+    # Try channel.id first (own ID), fall back to channel.siteId (parent site ID).
+    # The API docs say "the channel's siteId value" but in practice `id` may work too.
+    channel_id = channel.get("id") or channel.get("siteId")
+
+    # Fetch the past 30 days of daily counts for this channel (wider window to
+    # ensure we get at least some data even for stations that update infrequently)
     typical_daily: Optional[int] = None
     latest_count: Optional[int] = None
 
-    if channel_site_id is not None and domain:
+    if channel_id is not None and domain:
         now = datetime.now(tz=timezone.utc)
         end_str = now.strftime("%Y-%m-%dT%H:%M:%S")
-        begin_str = (now - timedelta(days=8)).strftime("%Y-%m-%dT%H:%M:%S")
+        begin_str = (now - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%S")
 
         async with httpx.AsyncClient(timeout=12.0) as client:
             count_data = await _fetch_graphql(
                 client,
                 _DATA_QUERY,
                 variables={
-                    "id": int(channel_site_id),
+                    "id": int(channel_id),
                     "domain": domain,
                     "begin": begin_str,
                     "end": end_str,
@@ -185,21 +190,18 @@ async def get_pedestrians(lat: float, lon: float) -> Dict[str, Any]:
 
         if count_data:
             records = count_data.get("ecoCounterSiteData") or []
-            # Filter out records with null counts
-            valid = [
-                r for r in records
-                if r.get("counts") is not None
-            ]
-            if valid:
-                counts = []
-                for r in valid:
-                    try:
-                        counts.append(int(r["counts"]))
-                    except (ValueError, TypeError):
-                        pass
-                if counts:
-                    latest_count = counts[-1]  # most recent day
-                    typical_daily = round(sum(counts) / len(counts))
+            counts = []
+            for r in records:
+                val = r.get("counts")
+                if val is None:
+                    continue
+                try:
+                    counts.append(int(val))
+                except (ValueError, TypeError):
+                    pass
+            if counts:
+                latest_count = counts[-1]
+                typical_daily = round(sum(counts) / len(counts))
 
     note = (
         f"Lähin EcoCounter-asema: {station_name}, "

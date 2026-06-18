@@ -3,12 +3,11 @@ Location scoring engine for OuluScout.
 
 Each dimension is scored 0–100 before weighting.
 Default weights (sum to 1.0):
-  traffic     0.25
+  traffic     0.30
   population  0.25
   jobs        0.15
   income      0.10
-  competition 0.15
-  transit     0.10
+  competition 0.20
 """
 
 from typing import Any, Dict
@@ -16,12 +15,11 @@ from typing import Any, Dict
 from app.models import ScoreBreakdown
 
 DEFAULT_WEIGHTS: Dict[str, float] = {
-    "traffic": 0.25,
+    "traffic": 0.30,
     "population": 0.25,
     "jobs": 0.15,
     "income": 0.10,
-    "competition": 0.15,
-    "transit": 0.10,
+    "competition": 0.20,
 }
 
 
@@ -90,45 +88,26 @@ def _score_competition(cafes: Dict[str, Any]) -> float:
     return 30.0
 
 
-def _score_transit(transit: Dict[str, Any]) -> float:
-    """
-    Stop within 100 m  → 100 pts
-    100–300 m          → 80 pts
-    300–600 m          → 50 pts
-    600 m+             → 20 pts
-    No data            → 40 pts (neutral)
-    """
-    distance_m = transit.get("distance_m")
-    if distance_m is None:
-        return 40.0
-    if distance_m <= 100:
-        return 100.0
-    if distance_m <= 300:
-        return 80.0
-    if distance_m <= 600:
-        return 50.0
-    return 20.0
-
-
 def calculate_score(
     traffic: Dict[str, Any],
     population: Dict[str, Any],
     cafes: Dict[str, Any],
-    transit: Dict[str, Any],
-    pedestrians: Dict[str, Any],  # noqa: ARG001 – reserved for future scoring
+    pedestrians: Dict[str, Any],  # noqa: ARG001 – reserved for future use
     weights: Dict[str, float],
 ) -> ScoreBreakdown:
     """
     Compute per-dimension scores and aggregate weighted total.
 
     ``weights`` should contain keys: traffic, population, jobs, income,
-    competition, transit – all floats that sum to 1.0.
+    competition – floats that sum to 1.0.
     Missing keys fall back to DEFAULT_WEIGHTS.
     """
-    # Merge caller weights with defaults
-    resolved: Dict[str, float] = {**DEFAULT_WEIGHTS, **weights}
+    # Only keep the five active weight keys; drop any unknown keys from caller
+    active_keys = set(DEFAULT_WEIGHTS)
+    filtered = {k: v for k, v in weights.items() if k in active_keys}
+    resolved: Dict[str, float] = {**DEFAULT_WEIGHTS, **filtered}
 
-    # Normalise so they always sum to 1.0 (safety net)
+    # Normalise so they always sum to 1.0
     total_w = sum(resolved.values())
     if total_w > 0 and abs(total_w - 1.0) > 1e-6:
         resolved = {k: v / total_w for k, v in resolved.items()}
@@ -138,7 +117,6 @@ def calculate_score(
     s_jobs = _score_jobs(population)
     s_income = _score_income(population)
     s_competition = _score_competition(cafes)
-    s_transit = _score_transit(transit)
 
     total = (
         s_traffic * resolved["traffic"]
@@ -146,7 +124,6 @@ def calculate_score(
         + s_jobs * resolved["jobs"]
         + s_income * resolved["income"]
         + s_competition * resolved["competition"]
-        + s_transit * resolved["transit"]
     )
 
     return ScoreBreakdown(
@@ -155,6 +132,6 @@ def calculate_score(
         jobs=round(s_jobs, 2),
         income=round(s_income, 2),
         competition=round(s_competition, 2),
-        transit=round(s_transit, 2),
+        transit=0.0,  # not scored
         total=round(_clamp(total), 2),
     )

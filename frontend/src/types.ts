@@ -4,7 +4,6 @@ export interface AnalysisWeights {
   jobs: number;
   income: number;
   competition: number;
-  transit: number;
 }
 
 export interface IsochroneResult {

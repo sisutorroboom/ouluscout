@@ -5,12 +5,11 @@ import MapComponent from './components/MapComponent';
 import Sidebar from './components/Sidebar';
 
 const DEFAULT_WEIGHTS: AnalysisWeights = {
-  traffic: 20,
-  population: 20,
+  traffic: 30,
+  population: 25,
   jobs: 15,
-  income: 15,
-  competition: 15,
-  transit: 15,
+  income: 10,
+  competition: 20,
 };
 
 let locationCounter = 0;

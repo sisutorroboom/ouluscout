@@ -32,7 +32,6 @@ from app.modules.isochrones import get_isochrones
 from app.modules.pedestrians import get_pedestrians
 from app.modules.population import get_population
 from app.modules.traffic import get_traffic
-from app.modules.transit import get_transit
 from app.scoring import DEFAULT_WEIGHTS, calculate_score
 
 # ---------------------------------------------------------------------------
@@ -226,19 +225,17 @@ async def analyze(req: AnalyzeRequest) -> AnalyzeResponse:
         fw = iso_raw.get("foot-walking", {})
         iso_polygon = fw.get(15) or fw.get("15")
 
-    # Run all remaining modules concurrently
+    # Run all remaining modules concurrently (transit removed – not relevant here)
     (
         cafes_raw,
         population_raw,
         traffic_raw,
         pedestrians_raw,
-        transit_raw,
     ) = await asyncio.gather(
         _run_module(get_cafes(lat, lon, iso_polygon), {}),
         _run_module(get_population(lat, lon, iso_polygon), {}),
         _run_module(get_traffic(lat, lon), {}),
         _run_module(get_pedestrians(lat, lon), {}),
-        _run_module(get_transit(lat, lon), {}),
     )
 
     # Build typed result objects
@@ -247,14 +244,13 @@ async def analyze(req: AnalyzeRequest) -> AnalyzeResponse:
     pop_result = _safe_population_result(population_raw)
     traffic_result = _safe_traffic_result(traffic_raw)
     ped_result = _safe_pedestrian_result(pedestrians_raw)
-    transit_result = _safe_transit_result(transit_raw)
+    transit_result = TransitResult()  # not used
 
     # Score
     score: ScoreBreakdown = calculate_score(
         traffic=traffic_raw if isinstance(traffic_raw, dict) else {},
         population=population_raw if isinstance(population_raw, dict) else {},
         cafes=cafes_raw if isinstance(cafes_raw, dict) else {},
-        transit=transit_raw if isinstance(transit_raw, dict) else {},
         pedestrians=pedestrians_raw if isinstance(pedestrians_raw, dict) else {},
         weights=weights,
     )
